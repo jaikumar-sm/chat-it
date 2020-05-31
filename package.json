@@ -10,7 +10,8 @@
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
     "socket.io": "^2.3.0",
-    "uuid": "^8.1.0"
+    "uuid": "^8.1.0",
+    "uuidv4": "^6.1.0"
   },
   "scripts": {
     "start": "concurrently 'npm run react' 'npm run server'",
