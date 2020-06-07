@@ -1,5 +1,5 @@
 const io = require('./index').io;
-const { VERIFY_USER, USER_CONNECTED, USER_DISCONNECTED, LOGOUT, COMMUNITY_CHAT, MESSAGE_RECIEVED, MESSAGE_SENT } = require('../Events');
+const { VERIFY_USER, USER_CONNECTED, USER_DISCONNECTED, LOGOUT, COMMUNITY_CHAT, MESSAGE_RECIEVED, MESSAGE_SENT, TYPING } = require('../Events');
 const { createUser, createMessage, createChat } = require('../Factories');
 
 let connectedUsers = {};
@@ -9,6 +9,7 @@ module.exports = (socket) => {
   console.log('Socket ID: '+socket.id);
 
   let sendMessageToChatFromUser;
+  let sendTypingFromUser;
 
   //Verify Username
   socket.on(VERIFY_USER, (nickname, callback) => {
@@ -28,7 +29,8 @@ module.exports = (socket) => {
     socket.user = user;
 
     sendMessageToChatFromUser = sendMessageToChat(user.name);
-    console.log('a->',sendMessageToChatFromUser)
+    sendTypingFromUser = sendTypingToChat(user.name);
+
     io.emit(USER_CONNECTED, connectedUsers);
     console.log(connectedUsers);
   });
@@ -57,6 +59,17 @@ module.exports = (socket) => {
   socket.on(MESSAGE_SENT, ({chatId, message}) => {
     sendMessageToChatFromUser(chatId, message);
   });
+
+  socket.on(TYPING, ({chatId, isTyping}) => {
+    // console.log(chatId, isTyping);
+    sendTypingFromUser(chatId, isTyping);
+  });
+}
+
+function sendTypingToChat(user) {
+  return (chatId, isTyping) => {
+    io.emit(`${TYPING}-${chatId}`, {user, isTyping});
+  }
 }
 
 function sendMessageToChat(sender) {
