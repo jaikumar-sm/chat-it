@@ -5,11 +5,22 @@ import { MdEject, MdMenu } from 'react-icons/md';
 class SideBar extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      reciever: ""
+    };
+  }
+
+  handleSubmit = (e) => {
+    e.preventDefault();
+    const { reciever } = this.state;
+    const { onSendPrivateMessage } = this.props;
+
+    onSendPrivateMessage(reciever);
   }
 
   render() {
     const { chats, activeChat, user, setActiveChat, logout } = this.props;
+    const { reciever } = this.state;
     return (
       <div id="side-bar">
         <div className="heading">
@@ -18,22 +29,30 @@ class SideBar extends React.Component {
             <MdMenu />
           </div>
         </div>
-        <div className="search">
+        <form className="search" onSubmit={this.handleSubmit}>
           <i className="serach-icon"><FaSearch /></i>
-          <input placeholder="Search" type="text" />
+          <input 
+            placeholder="Search"
+            type="text"
+            onChange={(e) => {
+              this.setState({reciever: e.target.value});
+            }}
+            value={reciever}
+          />
           <div className="plus"></div>
-        </div>
+        </form>
         <div 
           className="users"
           ref='users'
           onClick={ (e) => { (e.target === this.refs.user) && setActiveChat(null) } }>
             {
               chats.map((chat) => {
+                console.log(chats, chat);
                 if(chat.name) {
                   const lastMessage = chat.messages[chat.messages.length - 1];
-                  const user = chat.users.find(({name}) => {
-                    return name !== this.props.name;
-                  }) || { name: "Community" }
+                  const chatSideName = chat.users.find((name) => {
+                    return name !== user.name;
+                  }) || "Community"
                   const classNames = (activeChat && activeChat.id === chat.id) ? 'active' : '';
 
                   return (
@@ -41,9 +60,9 @@ class SideBar extends React.Component {
                       key={chat.id}
                       className={`user ${classNames}`}
                       onClick={ () => { setActiveChat(chat) } }>
-                        <div className="user-photo">{user.name[0].toUpperCase()}</div>
+                        <div className="user-photo">{chatSideName[0].toUpperCase()}</div>
                         <div className="user-info">
-                          <div className="name">{user.name}</div>
+                          <div className="name">{chatSideName}</div>
                           {lastMessage && <div className="last-message">{lastMessage.message}</div>}
                         </div>
                     </div>

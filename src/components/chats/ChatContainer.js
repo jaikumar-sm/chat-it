@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import SideBar from './SideBar';
-import { COMMUNITY_CHAT, MESSAGE_SENT, MESSAGE_RECIEVED, TYPING } from '../../Events';
+import { COMMUNITY_CHAT, MESSAGE_SENT, MESSAGE_RECIEVED, TYPING, PRIVATE_MESSAGE } from '../../Events';
 import ChatHeading from './ChatHeading';
 import Messages from '../messages/Messages';
 import MessageInput from '../messages/MessageInput';
@@ -8,6 +8,7 @@ import MessageInput from '../messages/MessageInput';
 class ChatContainer extends Component {
   constructor(props) {
     super(props);
+
     this.state = {
       chats: [],
       activeChat: null
@@ -16,7 +17,20 @@ class ChatContainer extends Component {
 
   componentDidMount() {
     const { socket } = this.props;
+    this.initSocket(socket);
+  }
+
+  initSocket(socket) {
     socket.emit(COMMUNITY_CHAT, this.resetChat);
+    socket.on(PRIVATE_MESSAGE, this.addChat);
+    socket.on('connect', () => {
+      socket.emit(COMMUNITY_CHAT, this.resetChat);
+    });
+  }
+
+  sendOpenPrivateMessage = (reciever) => {
+    const { socket, user } = this.props;
+    socket.emit(PRIVATE_MESSAGE, {reciever, sender: user.name});
   }
 
   resetChat = (chat) => {
@@ -24,7 +38,7 @@ class ChatContainer extends Component {
   }
 
   addChat = (chat, reset) => {
-    console.log('in addChat: ',chat)
+    // console.log('in addChat: ',chat)
     const { socket } = this.props;
     const { chats } = this.state;
 
@@ -52,6 +66,7 @@ class ChatContainer extends Component {
   }
 
   updateTypingInChat = (chatId) => {
+    // console.log('in updateTyping in chat');git
     return ({isTyping, user}) => {
       if(user !== this.props.user.name) {
         const { chats } = this.state;
@@ -62,8 +77,8 @@ class ChatContainer extends Component {
             } else if(!isTyping && chat.typingUsers.includes(user)) {
               chat.typingUsers = chat.typingUsers.filter(u => u !== user);
             }
-            return chat;
           }
+          return chat;
         });
         this.setState({chats: newChats});
       }
@@ -76,6 +91,7 @@ class ChatContainer extends Component {
   }
 
   sendTyping = (chatId, isTyping) => {
+    console.log('CC -> sendTyping');
     const { socket } = this.props;
     socket.emit(TYPING, {chatId, isTyping});
   }
@@ -95,6 +111,7 @@ class ChatContainer extends Component {
           user={user}
           activeChat={activeChat}
           setActiveChat={this.setActiveChat}
+          onSendPrivateMessage={this.sendOpenPrivateMessage}
         />
         <div className="chat-room-container">
           {

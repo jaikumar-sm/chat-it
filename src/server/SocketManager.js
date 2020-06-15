@@ -1,11 +1,12 @@
 const io = require('./index').io;
-const { VERIFY_USER, USER_CONNECTED, USER_DISCONNECTED, LOGOUT, COMMUNITY_CHAT, MESSAGE_RECIEVED, MESSAGE_SENT, TYPING } = require('../Events');
+const { VERIFY_USER, USER_CONNECTED, USER_DISCONNECTED, LOGOUT, COMMUNITY_CHAT, 
+        MESSAGE_RECIEVED, MESSAGE_SENT, TYPING, PRIVATE_MESSAGE } = require('../Events');
 const { createUser, createMessage, createChat } = require('../Factories');
 
 let connectedUsers = {};
 let communityChat = createChat();
 
-module.exports = (socket) => {
+module.exports = function(socket) {
   console.log('Socket ID: '+socket.id);
 
   let sendMessageToChatFromUser;
@@ -18,13 +19,14 @@ module.exports = (socket) => {
     } else {
       callback({
         isUser: false, 
-        user: createUser({name: nickname})
+        user: createUser({name: nickname, socketId: socket.id})
       });
     }
   })
 
   //User connects with Username
   socket.on(USER_CONNECTED, (user) => {
+    user.socketId = socket.id;
     connectedUsers = addUser(connectedUsers, user);
     socket.user = user;
 
@@ -61,8 +63,18 @@ module.exports = (socket) => {
   });
 
   socket.on(TYPING, ({chatId, isTyping}) => {
-    // console.log(chatId, isTyping);
+    console.log(chatId, isTyping);
     sendTypingFromUser(chatId, isTyping);
+  });
+
+  socket.on(PRIVATE_MESSAGE, ({reciever, sender}) => {
+    // console.log(reciever, sender);
+    if(reciever in connectedUsers) {
+      const newChat = createChat({ name: `${reciever}&${sender}`, users: [reciever, sender] });
+      const recieverSocket = connectedUsers[reciever].socketId;
+      socket.to(recieverSocket).emit(PRIVATE_MESSAGE, newChat);
+      socket.emit(PRIVATE_MESSAGE, newChat);
+    }
   });
 }
 
